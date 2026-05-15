@@ -24,7 +24,39 @@ const server = http.createServer((req, res) => {
     }
 
     if (url === '/contact' && method === 'POST') {
-        // Implement form submission handling
+        const chunks = [];
+        req.on('data', (chunk) => {
+            chunks.push(chunk);
+        });
+
+        req.on('end', () => {
+            const body = Buffer.concat(chunks).toString();
+            const params = new URLSearchParams(body);
+            const name = params.get('name') ? params.get('name').trim() : '';
+
+            console.log('Form submission:', name);
+
+            const fs = require('fs');
+            const filePath = __dirname + '/submissions.txt';
+            fs.appendFile(filePath, name + '\n', (err) => {
+                if (err) {
+                    console.error('Failed to write submission:', err);
+                    res.writeHead(500, { 'Content-Type': 'text/plain' });
+                    return res.end('Internal Server Error');
+                }
+
+                res.writeHead(200, { 'Content-Type': 'text/plain' });
+                return res.end('Submission received');
+            });
+        });
+
+        req.on('error', (err) => {
+            console.error('Request error:', err);
+            res.writeHead(400, { 'Content-Type': 'text/plain' });
+            return res.end('Bad Request');
+        });
+
+        return;
     }
 
     else {
